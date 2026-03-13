@@ -1,0 +1,3 @@
+﻿node_modules/
+data/*.json
+npm-debug.log*

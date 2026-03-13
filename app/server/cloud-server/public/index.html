@@ -1,0 +1,112 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLAWOS API 控制台</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__badge">LOCAL DEV CONSOLE</div>
+      <h1>CLAWOS Cloud API 控制台</h1>
+      <p>按钮化调试当前云端服务接口，适合本地联调与演示。</p>
+      <div class="hero__meta">
+        <button id="btnHealth">检查 /health</button>
+        <span id="healthStatus">未检测</span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>1) 账号</h2>
+        <div class="row">
+          <label>邮箱<input id="email" placeholder="admin@example.com" /></label>
+          <label>密码<input id="password" type="password" value="Passw0rd!" /></label>
+          <label>昵称<input id="nickname" placeholder="admin" /></label>
+        </div>
+        <div class="actions">
+          <button id="btnRegister">注册</button>
+          <button id="btnLogin">登录</button>
+          <button id="btnLogout" class="ghost">清空令牌</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2) 设备与会话</h2>
+        <div class="row">
+          <label>device_id<input id="deviceId" placeholder="自动生成或填写已有" /></label>
+          <label>device_name<input id="deviceName" value="pi-local-demo" /></label>
+          <label>session_id<input id="sessionId" placeholder="创建后自动填充" /></label>
+        </div>
+        <div class="actions">
+          <button id="btnBindDevice">绑定设备</button>
+          <button id="btnCreateSession">创建会话</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>3) 消息中转</h2>
+        <div class="row">
+          <label>msg_type
+            <select id="msgType">
+              <option value="cmd">cmd</option>
+              <option value="nl">nl</option>
+            </select>
+          </label>
+          <label>content<input id="msgContent" value="BASE64_CIPHERTEXT" /></label>
+          <label>cursor<input id="cursor" value="0" /></label>
+        </div>
+        <div class="actions">
+          <button id="btnRelaySend">发送消息</button>
+          <button id="btnRelayPull">拉取消息</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>4) 分享与加入</h2>
+        <div class="row">
+          <label>share_code<input id="shareCode" placeholder="创建后自动填充" /></label>
+          <label>过期(分钟)<input id="shareExpire" value="30" /></label>
+        </div>
+        <div class="actions">
+          <button id="btnCreateShare">创建分享码</button>
+          <button id="btnJoinShare">加入设备</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>5) 文件查询</h2>
+        <div class="row">
+          <label>space_type
+            <select id="spaceType">
+              <option value="public">public</option>
+              <option value="private">private</option>
+            </select>
+          </label>
+          <label>file_id<input id="fileId" placeholder="预览时填写" /></label>
+        </div>
+        <div class="actions">
+          <button id="btnFilesList">文件列表</button>
+          <button id="btnFilesPreview">文件预览</button>
+        </div>
+      </section>
+
+      <section class="card card--wide">
+        <h2>状态</h2>
+        <div class="chips">
+          <span>access_token: <code id="tokenInfo">(空)</code></span>
+          <span>device_id: <code id="deviceInfo">(空)</code></span>
+          <span>session_id: <code id="sessionInfo">(空)</code></span>
+        </div>
+      </section>
+
+      <section class="card card--wide">
+        <h2>响应日志</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
