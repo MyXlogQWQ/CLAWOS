@@ -120,6 +120,8 @@ function createAgent(cfg) {
       if (row.from_user_role === 'device') continue;
       if (processed.has(row.message_id)) continue;
 
+      console.log(`[agent] received ${row.msg_type} message id=${row.id} source=${row.from_user_id}`);
+
       let payload;
       try {
         payload = await processMessage(row);
@@ -134,8 +136,10 @@ function createAgent(cfg) {
 
       try {
         await pushResult(row.msg_type, payload);
+        console.log(`[agent] processed ${row.msg_type} message id=${row.id} ok=${payload.ok}`);
       } catch {
         await enqueueOutbox(row.msg_type, payload);
+        console.log(`[agent] queued result for retry message id=${row.id} ok=${payload.ok}`);
       }
 
       processed.add(row.message_id);

@@ -85,7 +85,6 @@ npm run smoke
 
 - `cryptoMode=passthrough` means payload is base64(plaintext) for local development.
 - `cryptoMode=aes-gcm` enables local AES-256-GCM envelope encryption.
-- `nl` executor uses stub output unless `openClawCommand` is configured.
-- OpenClaw CLI supports fixed args via `openClawArgs`, for example:
-  `openClawCommand: "openclaw"`
-  `openClawArgs: ["agent", "--agent", "main", "--message", "{text}"]`
+- `nl` executor uses stub output unless `openClawCommandTemplate` or `openClawCommand` is configured.
+- Recommended OpenClaw config on Windows:
+  `openClawCommandTemplate: "openclaw agent --agent main --message \"{text}\""`

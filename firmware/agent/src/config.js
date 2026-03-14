@@ -20,6 +20,7 @@ function loadConfig() {
     denyPatterns: fileCfg.denyPatterns || ['rm -rf', 'mkfs', 'dd if=', 'shutdown', 'reboot', 'init 0', 'poweroff'],
     openClawCommand: process.env.AGENT_OPENCLAW_COMMAND || fileCfg.openClawCommand || '',
     openClawArgs: Array.isArray(fileCfg.openClawArgs) ? fileCfg.openClawArgs : [],
+    openClawCommandTemplate: process.env.AGENT_OPENCLAW_COMMAND_TEMPLATE || fileCfg.openClawCommandTemplate || '',
     cryptoMode: process.env.AGENT_CRYPTO_MODE || fileCfg.cryptoMode || 'passthrough',
     cryptoKeyB64: process.env.AGENT_CRYPTO_KEY_B64 || fileCfg.cryptoKeyB64 || '',
   };

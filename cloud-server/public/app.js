@@ -6,6 +6,41 @@ const state = {
   sessionId: localStorage.getItem('clawos_session_id') || '',
 };
 
+function encodeBase64Utf8(text) {
+  return btoa(unescape(encodeURIComponent(String(text))));
+}
+
+function decodeBase64Utf8(text) {
+  return decodeURIComponent(escape(atob(String(text))));
+}
+
+function tryDecodeDeviceContent(content) {
+  try {
+    const decoded = decodeBase64Utf8(content);
+    try {
+      return {
+        decoded_text: decoded,
+        decoded_json: JSON.parse(decoded),
+      };
+    } catch {
+      return {
+        decoded_text: decoded,
+      };
+    }
+  } catch {
+    return null;
+  }
+}
+
+function decorateRelayMessages(messages) {
+  if (!Array.isArray(messages)) return messages;
+  return messages.map((row) => {
+    if (row.from_user_role !== 'device') return row;
+    const decoded = tryDecodeDeviceContent(row.content);
+    return decoded ? { ...row, ...decoded } : row;
+  });
+}
+
 function syncStateToUi() {
   $('tokenInfo').textContent = state.token ? `${state.token.slice(0, 12)}...` : '(空)';
   $('deviceInfo').textContent = state.deviceId || '(空)';
@@ -98,14 +133,15 @@ async function onCreateSession() {
 }
 
 async function onRelaySend() {
+  const plainText = $('msgContent').value.trim();
   const body = {
     session_id: $('sessionId').value.trim() || state.sessionId,
     msg_type: $('msgType').value,
-    content: $('msgContent').value.trim(),
+    content: encodeBase64Utf8(plainText),
     nonce: 'BASE64_NONCE',
   };
   const data = await callApi('POST', '/relay/send', body, true);
-  log('POST /relay/send', data);
+  log('POST /relay/send', { ...data, plain_text: plainText, encoded_content: body.content });
 }
 
 async function onRelayPull() {
@@ -115,7 +151,10 @@ async function onRelayPull() {
   if (Array.isArray(data.messages) && data.messages.length) {
     $('cursor').value = String(data.cursor);
   }
-  log('GET /relay/pull', data);
+  log('GET /relay/pull', {
+    ...data,
+    messages: decorateRelayMessages(data.messages),
+  });
 }
 
 async function onCreateShare() {

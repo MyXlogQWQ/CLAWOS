@@ -9,6 +9,5 @@
   "cryptoMode": "passthrough",
   "allowCommands": ["echo", "ls", "pwd", "date", "whoami", "uname", "cat", "df", "free", "uptime"],
   "denyPatterns": ["rm -rf", "mkfs", "dd if=", "shutdown", "reboot", "init 0", "poweroff"],
-  "openClawCommand": "openclaw",
-  "openClawArgs": ["agent", "--agent", "main", "--message", "{text}"]
+  "openClawCommandTemplate": "openclaw agent --agent main --message \"{text}\""
 }

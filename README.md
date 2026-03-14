@@ -64,15 +64,13 @@ http://localhost:8787/
 - `deviceId`：当前 Agent 对应的设备 ID
 - `deviceKey`：当前 Agent 对应的设备密钥
 - `cryptoMode`：本地联调建议用 `passthrough`
-- `openClawCommand`：OpenClaw 命令，当前为 `openclaw`
-- `openClawArgs`：OpenClaw 固定参数模板
+- `openClawCommandTemplate`：完整 OpenClaw 命令模板，推荐使用
 
 `nl` 推荐配置如下：
 
 ```json
 {
-  "openClawCommand": "openclaw",
-  "openClawArgs": ["agent", "--agent", "main", "--message", "{text}"]
+  "openClawCommandTemplate": "openclaw agent --agent main --message \"{text}\""
 }
 ```
 
@@ -225,7 +223,7 @@ npm start
 
 检查：
 
-- `agent.config.json` 里是否配置了 `openClawCommand` 和 `openClawArgs`
+- `agent.config.json` 里是否配置了 `openClawCommandTemplate`
 - 终端里是否能手工执行：
 
 ```powershell
@@ -252,7 +250,7 @@ cd e:\TianJi\CLAWOS\firmware\agent
 npm run smoke
 ```
 
-注意：`firmware/agent` 的 smoke 会改写 `firmware/agent/config/agent.config.json`，跑完后如果你要继续联调自己的设备，需要把配置改回你自己的 `deviceId/deviceKey/openClawArgs`。
+注意：`firmware/agent` 的 smoke 会改写 `firmware/agent/config/agent.config.json`，跑完后如果你要继续联调自己的设备，需要把配置改回你自己的 `deviceId/deviceKey/openClawCommandTemplate`。
 
 ## 10. 当前限制
 

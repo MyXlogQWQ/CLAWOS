@@ -8,6 +8,41 @@ function buildArgs(argTemplates, text) {
   return argTemplates.map((arg) => String(arg).replaceAll('{text}', text));
 }
 
+function buildCommandTemplate(commandTemplate, text) {
+  return String(commandTemplate).replaceAll('{text}', text.replaceAll('"', '\\"'));
+}
+
+function runOpenClawTemplate(commandTemplate, text, timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    const child = spawn(buildCommandTemplate(commandTemplate, text), {
+      shell: true,
+      windowsHide: true,
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+    }, timeoutMs);
+
+    child.stdout.on('data', (d) => {
+      stdout += d.toString();
+    });
+
+    child.stderr.on('data', (d) => {
+      stderr += d.toString();
+    });
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ code, timedOut, stdout: stdout.trim(), stderr: stderr.trim() });
+    });
+  });
+}
+
 function runOpenClaw(command, argTemplates, text, timeoutMs = 15000) {
   return new Promise((resolve) => {
     const child = spawn(command, buildArgs(argTemplates, text), {
@@ -40,7 +75,7 @@ function runOpenClaw(command, argTemplates, text, timeoutMs = 15000) {
 }
 
 async function executeNl(messageText, cfg) {
-  if (!cfg.openClawCommand) {
+  if (!cfg.openClawCommand && !cfg.openClawCommandTemplate) {
     return {
       ok: true,
       type: 'nl_result',
@@ -49,7 +84,10 @@ async function executeNl(messageText, cfg) {
     };
   }
 
-  const result = await runOpenClaw(cfg.openClawCommand, cfg.openClawArgs, messageText, cfg.cmdTimeoutMs);
+  const result = cfg.openClawCommandTemplate
+    ? await runOpenClawTemplate(cfg.openClawCommandTemplate, messageText, cfg.cmdTimeoutMs)
+    : await runOpenClaw(cfg.openClawCommand, cfg.openClawArgs, messageText, cfg.cmdTimeoutMs);
+
   return {
     ok: result.code === 0 && !result.timedOut,
     type: 'nl_result',
