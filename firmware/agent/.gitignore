@@ -1,0 +1,5 @@
+﻿node_modules/
+runtime/*.json
+runtime/*.log
+config/agent.config.json
+dist/

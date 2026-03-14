@@ -1,0 +1,14 @@
+{
+  "cloudBaseUrl": "http://localhost:8787",
+  "deviceId": "",
+  "deviceKey": "",
+  "pollIntervalMs": 2000,
+  "pullLimit": 50,
+  "cmdTimeoutMs": 12000,
+  "outboxRetryIntervalMs": 5000,
+  "cryptoMode": "passthrough",
+  "allowCommands": ["echo", "ls", "pwd", "date", "whoami", "uname", "cat", "df", "free", "uptime"],
+  "denyPatterns": ["rm -rf", "mkfs", "dd if=", "shutdown", "reboot", "init 0", "poweroff"],
+  "openClawCommand": "openclaw",
+  "openClawArgs": ["agent", "--agent", "main", "--message", "{text}"]
+}

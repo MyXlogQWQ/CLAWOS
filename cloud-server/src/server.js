@@ -134,6 +134,21 @@ function findDeviceBySession(db, sessionId) {
   return db.devices.find((d) => d.session_id === sessionId || d.session_link === sessionId);
 }
 
+function authDeviceFromHeaders(req, db) {
+  const deviceId = req.headers['x-device-id'];
+  const deviceKey = req.headers['x-device-key'];
+  if (!deviceId || !deviceKey) {
+    return { ok: false, status: 401, error: 'missing_device_auth_headers' };
+  }
+
+  const device = db.devices.find((d) => d.id === deviceId);
+  if (!device) return { ok: false, status: 404, error: 'device_not_found' };
+  if (!device.session_id) return { ok: false, status: 400, error: 'device_session_not_ready' };
+  if (device.device_key !== deviceKey) return { ok: false, status: 403, error: 'invalid_device_key' };
+
+  return { ok: true, device };
+}
+
 function seedFilesForDevice(db, deviceId, ownerUserId) {
   const exists = db.file_entries.some((f) => f.device_id === deviceId);
   if (exists) return;
@@ -409,6 +424,79 @@ app.get('/relay/pull', authMiddleware, (req, res) => {
   saveDb(db);
 
   return res.json({ session_id: device.session_id, cursor: nextCursor, messages });
+});
+
+app.get('/agent/pull', (req, res) => {
+  const db = loadDb();
+  const authz = authDeviceFromHeaders(req, db);
+  if (!authz.ok) return res.status(authz.status).json({ error: authz.error });
+
+  const cursor = Number.parseInt(req.query.cursor || '0', 10);
+  const limit = Math.min(Number.parseInt(req.query.limit || '50', 10), 100);
+  const sessionId = authz.device.session_id;
+
+  const messages = db.relay_messages
+    .filter((m) => m.session_id === sessionId && m.id > cursor)
+    .sort((a, b) => a.id - b.id)
+    .slice(0, limit);
+  const nextCursor = messages.length > 0 ? messages[messages.length - 1].id : cursor;
+
+  logAudit(db, {
+    user_id: null,
+    action: 'agent_pull',
+    target_type: 'device',
+    target_id: authz.device.id,
+    metadata: { cursor, next_cursor: nextCursor, count: messages.length },
+  });
+  saveDb(db);
+
+  return res.json({
+    device_id: authz.device.id,
+    session_id: sessionId,
+    cursor: nextCursor,
+    messages,
+  });
+});
+
+app.post('/agent/push', (req, res) => {
+  const db = loadDb();
+  const authz = authDeviceFromHeaders(req, db);
+  if (!authz.ok) return res.status(authz.status).json({ error: authz.error });
+
+  const {
+    msg_type = 'cmd',
+    content,
+    nonce = null,
+    timestamp = Date.now(),
+    message_id = randomId(),
+  } = req.body || {};
+
+  if (!content) return res.status(400).json({ error: 'content_required' });
+  if (!['cmd', 'nl'].includes(msg_type)) return res.status(400).json({ error: 'invalid_msg_type' });
+
+  const row = {
+    id: db.sequences.relay_messages++,
+    session_id: authz.device.session_id,
+    from_user_id: `device:${authz.device.id}`,
+    from_user_role: 'device',
+    msg_type,
+    content,
+    nonce,
+    timestamp,
+    message_id,
+    created_at: nowIso(),
+  };
+  db.relay_messages.push(row);
+  logAudit(db, {
+    user_id: null,
+    action: 'agent_push',
+    target_type: 'device',
+    target_id: authz.device.id,
+    metadata: { relay_id: row.id, msg_type },
+  });
+  saveDb(db);
+
+  return res.status(201).json({ relay_id: row.id, stored: true });
 });
 
 app.post('/share/create', authMiddleware, (req, res) => {

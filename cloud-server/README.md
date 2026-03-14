@@ -11,6 +11,8 @@ Local runnable cloud service for the Stage-0 scope in `ref-data/dev-steps.md`.
 - `POST /sessions/create`
 - `POST /relay/send`
 - `GET /relay/pull`
+- `GET /agent/pull` (device auth)
+- `POST /agent/push` (device auth)
 - `POST /share/create`
 - `POST /share/join`
 - `GET /files/list`
@@ -19,7 +21,7 @@ Local runnable cloud service for the Stage-0 scope in `ref-data/dev-steps.md`.
 ## Local Run
 
 ```bash
-cd app/server/cloud-server
+cd cloud-server
 npm install
 npm start
 ```
@@ -32,7 +34,7 @@ Open `http://localhost:8787/` for the button-based local API console.
 Keep the server running, then execute:
 
 ```bash
-cd app/server/cloud-server
+cd cloud-server
 npm run smoke
 ```
 

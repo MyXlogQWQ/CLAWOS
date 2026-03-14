@@ -1,0 +1,32 @@
+{
+    "name":  "clawos-firmware-agent",
+    "version":  "0.1.0",
+    "private":  true,
+    "description":  "CLAWOS Raspberry Pi base agent (stage-1)",
+    "bin":  "src/index.js",
+    "main":  "src/index.js",
+    "scripts":  {
+                    "start":  "node src/index.js",
+                    "dev":  "node src/index.js",
+                    "smoke":  "powershell -ExecutionPolicy Bypass -File ./scripts/agent-smoke.ps1",
+                    "build:linux-arm64":  "pkg . --public --no-bytecode --targets node18-linux-arm64 --output dist/clawos-agent-linux-arm64",
+                    "build:linux-armv7":  "pkg . --public --no-bytecode --targets node18-linux-armv7 --output dist/clawos-agent-linux-armv7",
+                    "build:win-x64":  "pkg . --public --no-bytecode --targets node18-win-x64 --output dist/clawos-agent-win-x64.exe"
+                },
+    "engines":  {
+                    "node":  "\u003e=18"
+                },
+    "devDependencies":  {
+                            "pkg":  "^5.8.1"
+                        },
+    "pkg":  {
+                "scripts":  [
+                                "src/**/*.js"
+                            ],
+                "assets":  [
+                               "config/agent.config.example.json",
+                               "systemd/*.service",
+                               "README.md"
+                           ]
+            }
+}

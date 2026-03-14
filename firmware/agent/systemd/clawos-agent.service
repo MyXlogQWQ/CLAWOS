@@ -1,0 +1,25 @@
+﻿[Unit]
+Description=CLAWOS Raspberry Pi Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/clawos/firmware/agent
+ExecStart=/usr/bin/node /opt/clawos/firmware/agent/src/index.js
+Restart=always
+RestartSec=3
+User=clawos
+Group=clawos
+Environment=NODE_ENV=production
+Environment=AGENT_CONFIG_PATH=/opt/clawos/firmware/agent/config/agent.config.json
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/clawos/firmware/agent/runtime /opt/clawos/firmware/agent/config
+
+[Install]
+WantedBy=multi-user.target
