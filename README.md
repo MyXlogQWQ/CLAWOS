@@ -11,6 +11,12 @@
 - 阶段 0：账号、设备、会话、消息中转
 - 阶段 1：Agent 轮询、`cmd` 执行、`nl` 执行、结果回传
 
+当前仓库也已经补上了阶段 2 的本地实现：
+
+- 未配网设备启动后进入首次配网模式
+- 通过一次性配对码和 provisioning packet 完成初始化
+- 配网成功后自动切换到公网轮询模式
+
 ## 目录
 
 ```text
@@ -107,6 +113,39 @@ Agent 必须和网页里操作的是同一台设备。
 设备信息存放在：
 
 [cloud-server/data/db.json](/e:/TianJi/CLAWOS/cloud-server/data/db.json)
+
+## 2.1 如何做阶段 2 首次配网
+
+如果要测试阶段 2，先把：
+
+[firmware/agent/config/agent.config.json](/e:/TianJi/CLAWOS/firmware/agent/config/agent.config.json)
+
+里的 `deviceId` 和 `deviceKey` 清空，或者直接运行：
+
+```powershell
+cd e:\TianJi\CLAWOS\firmware\agent
+npm run factory-reset
+```
+
+然后启动 Agent：
+
+```powershell
+npm start
+```
+
+此时 Agent 会进入本地配网模式，并打印：
+
+- 本地配网地址
+- 一次性 `pair_code`
+
+接着用配网脚本提交初始化数据：
+
+```powershell
+cd e:\TianJi\CLAWOS\firmware\agent
+npm run provision -- --pair-code <PAIR_CODE> --wifi-ssid MyWifi --wifi-password Passw0rd123 --device-id <DEVICE_ID> --device-key <DEVICE_KEY> --session-id <SESSION_ID> --session-link <SESSION_LINK>
+```
+
+成功后 Agent 会自动退出配网服务并进入正式运行模式。
 
 ## 4. 网页端如何使用
 

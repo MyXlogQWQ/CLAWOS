@@ -1,90 +1,128 @@
-# CLAWOS Firmware Agent (Stage-1)
+# CLAWOS Firmware Agent
 
-Raspberry Pi base agent implementation for stage-1:
+当前 `firmware/agent` 已覆盖：
 
-- Resident loop polling cloud relay (`/agent/pull`)
-- Message pipeline: decrypt -> dispatch (`cmd`/`nl`) -> execute -> encrypt -> push (`/agent/push`)
-- Command whitelist + dangerous pattern blocking + timeout
-- Local state persistence (`runtime/state.json`) and outbox retry (`runtime/outbox.json`)
-- Local config/key file with chmod 600 best-effort
+- Stage-1：轮询云端、执行 `cmd/nl`、回传结果
+- Stage-2：首次配网、一次性配对码、配网数据包校验、模式切换、回滚/重置
 
-## Quick Start
+## 启动模式
 
-1. Copy config template:
+Agent 现在有两种启动模式：
 
-```bash
-cp config/agent.config.example.json config/agent.config.json
-```
+1. 已配网模式
+- 当 `config/agent.config.json` 里有 `deviceId + deviceKey`
+- 启动后直接进入云端轮询模式
 
-2. Fill `deviceId` and `deviceKey` in `config/agent.config.json`.
+2. 未配网模式
+- 当 `deviceId` 或 `deviceKey` 为空
+- 启动后进入本地“BLE-like 配网服务”
 
-3. Run agent:
+## Stage-2 配网服务
+
+未配网时启动：
 
 ```bash
 npm start
 ```
 
-## Build Executable (Pack JS to Binary)
-
-Install dependencies first:
-
-```bash
-npm install
-```
-
-Build targets:
-
-```bash
-npm run build:linux-arm64
-npm run build:linux-armv7
-npm run build:win-x64
-```
-
-Generated files are in `dist/`.
-On Windows build hosts, `linux-arm64` is validated. `linux-armv7` may require building on a Linux host.
-
-## Deploy Binary on Raspberry Pi
-
-Example layout:
+会看到类似输出：
 
 ```text
-/opt/clawos/agent/
-  clawos-agent-linux-arm64
-  config/agent.config.json
-  runtime/
+[agent] device is unprovisioned, entering stage-2 provisioning mode
+[provisioning] BLE-like advertising enabled on http://127.0.0.1:8788
+[provisioning] mode=factory, pair_code=ABC123, expires_at=...
 ```
 
-Run manually:
+当前阶段 2 先用本地 HTTP 服务模拟 BLE 配网握手，方便在 PC 和树莓派上跑同一套逻辑。
+
+## 配网接口
+
+- `GET /health`
+- `GET /status`
+- `POST /pair/start`
+- `POST /provision/apply`
+- `POST /factory-reset`
+
+## 一次性配网流程
+
+1. 启动未配网 Agent
+2. 从控制台获取 `pair_code`
+3. 调用 `/pair/start`
+4. 生成带完整性校验的 provisioning packet
+5. 调用 `/provision/apply`
+6. Agent 写入配置并关闭配网服务
+7. 自动切到公网轮询模式
+
+## 使用本地配网脚本
 
 ```bash
-chmod +x /opt/clawos/agent/clawos-agent-linux-arm64
-AGENT_CONFIG_PATH=/opt/clawos/agent/config/agent.config.json /opt/clawos/agent/clawos-agent-linux-arm64
+npm run provision -- ^
+  --pair-code ABC123 ^
+  --wifi-ssid MyWifi ^
+  --wifi-password Passw0rd123 ^
+  --device-id <device_id> ^
+  --device-key <device_key> ^
+  --session-id <session_id> ^
+  --session-link <session_link>
 ```
 
-Notes:
+可选参数：
 
-- When packaged, default root path is the executable directory (`process.execPath` dir).
-- You can always override config path via `AGENT_CONFIG_PATH`.
+- `--base-url http://127.0.0.1:8788`
+- `--cloud-base-url http://localhost:8787`
+- `--public-key PUBLIC_KEY_PLACEHOLDER`
+- `--admin-private-key ADMIN_PRIVATE_KEY_PLACEHOLDER`
 
-## Auto Start (systemd)
+## 恢复与重置
 
-- Node script mode service sample:
-  - `systemd/clawos-agent.service`
-- Binary mode service sample:
-  - `systemd/clawos-agent-bin.service`
-
-## Stage-1 Smoke Test
-
-This script starts cloud server + agent and runs an end-to-end command flow:
+工厂重置：
 
 ```bash
-npm run smoke
+npm run factory-reset
 ```
 
-## Notes
+执行后会：
 
-- `cryptoMode=passthrough` means payload is base64(plaintext) for local development.
-- `cryptoMode=aes-gcm` enables local AES-256-GCM envelope encryption.
-- `nl` executor uses stub output unless `openClawCommandTemplate` or `openClawCommand` is configured.
-- Recommended OpenClaw config on Windows:
-  `openClawCommandTemplate: "openclaw agent --agent main --message \"{text}\""`
+- 清空 `deviceId/deviceKey`
+- 清理 `runtime/network.json`
+- 清理 `runtime/provisioning-keys.json`
+- 清理 pending provisioning 状态
+- 下次启动重新进入配网模式
+
+## 配网包校验
+
+当前配网包包含：
+
+- `packet_id`
+- `timestamp`
+- `wifi`
+- `session`
+- `keys`
+- `integrity`
+
+已实现：
+
+- 一次性配对码握手
+- 配网会话过期
+- HMAC-SHA256 完整性校验
+- 时间戳校验
+- `packet_id` 重放检测
+
+## 文件落盘
+
+配网成功后会写入：
+
+- `config/agent.config.json`
+- `runtime/network.json`
+- `runtime/provisioning-keys.json`
+- `runtime/provisioning-state.json`
+
+## OpenClaw 配置
+
+推荐配置：
+
+```json
+{
+  "openClawCommandTemplate": "openclaw agent --agent main --message \"{text}\""
+}
+```

@@ -7,7 +7,7 @@ const DEFAULT_CONFIG_PATH = process.env.AGENT_CONFIG_PATH || path.join(ROOT, 'co
 function loadConfig() {
   const fileCfg = readJson(DEFAULT_CONFIG_PATH, {});
 
-  const cfg = {
+  return {
     cloudBaseUrl: process.env.AGENT_CLOUD_BASE_URL || fileCfg.cloudBaseUrl || 'http://localhost:8787',
     deviceId: process.env.AGENT_DEVICE_ID || fileCfg.deviceId || '',
     deviceKey: process.env.AGENT_DEVICE_KEY || fileCfg.deviceKey || '',
@@ -23,16 +23,23 @@ function loadConfig() {
     openClawCommandTemplate: process.env.AGENT_OPENCLAW_COMMAND_TEMPLATE || fileCfg.openClawCommandTemplate || '',
     cryptoMode: process.env.AGENT_CRYPTO_MODE || fileCfg.cryptoMode || 'passthrough',
     cryptoKeyB64: process.env.AGENT_CRYPTO_KEY_B64 || fileCfg.cryptoKeyB64 || '',
+    provisioningEnabled: process.env.AGENT_PROVISIONING_ENABLED
+      ? process.env.AGENT_PROVISIONING_ENABLED === 'true'
+      : fileCfg.provisioningEnabled !== false,
+    provisioningBind: process.env.AGENT_PROVISIONING_BIND || fileCfg.provisioningBind || '127.0.0.1',
+    provisioningPort: Number(process.env.AGENT_PROVISIONING_PORT || fileCfg.provisioningPort || 8788),
+    pairingCodeTtlMs: Number(process.env.AGENT_PAIRING_CODE_TTL_MS || fileCfg.pairingCodeTtlMs || 5 * 60 * 1000),
+    provisioningSessionTtlMs: Number(process.env.AGENT_PROVISIONING_SESSION_TTL_MS || fileCfg.provisioningSessionTtlMs || 10 * 60 * 1000),
+    provisioningClockSkewMs: Number(process.env.AGENT_PROVISIONING_CLOCK_SKEW_MS || fileCfg.provisioningClockSkewMs || 5 * 60 * 1000),
   };
+}
 
-  if (!cfg.deviceId || !cfg.deviceKey) {
-    throw new Error('Missing deviceId/deviceKey. Configure AGENT_DEVICE_ID & AGENT_DEVICE_KEY or config/agent.config.json');
-  }
-
-  return cfg;
+function isProvisionedConfig(cfg) {
+  return Boolean(cfg.deviceId && cfg.deviceKey);
 }
 
 module.exports = {
   loadConfig,
+  isProvisionedConfig,
   DEFAULT_CONFIG_PATH,
 };
